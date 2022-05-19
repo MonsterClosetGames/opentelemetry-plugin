@@ -12,6 +12,8 @@ import hudson.ExtensionList;
 import hudson.model.Computer;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
@@ -142,14 +144,43 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"stage");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
-            Span stageSpan = getTracer().spanBuilder(spanStageName)
-                    .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
-                    .startSpan();
+            SpanBuilder spanBuilder = getTracer().spanBuilder(spanStageName)
+                .setParent(Context.current())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+            
+            // PARAMETERS
+            ParametersAction parameters = run.getAction(ParametersAction.class);
+            if (parameters != null) {
+                List<String> parameterNames = new ArrayList<>();
+                List<Boolean> parameterIsSensitive = new ArrayList<>();
+                // Span Attribute Values can NOT be null
+                // https://github.com/open-telemetry/opentelemetry-specification/blob/v1.3.0/specification/common/common.md
+                List<String> nonNullParameterValues = new ArrayList<>();
+
+                for (ParameterValue parameter : parameters.getParameters()) {
+                    parameterNames.add(Objects.toString(parameter.getName(), "#NULL#"));
+                    parameterIsSensitive.add(parameter.isSensitive());
+                    if (parameter.isSensitive()) {
+                        nonNullParameterValues.add("#REDACTED#");
+                    } else {
+                        nonNullParameterValues.add(Objects.toString(parameter.getValue(), "#NULL#"));
+                    }
+                }
+                spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_NAME, parameterNames);
+                spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE, parameterIsSensitive);
+                spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
+            }
+
+            Span stageSpan = spanBuilder.startSpan();
+
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
