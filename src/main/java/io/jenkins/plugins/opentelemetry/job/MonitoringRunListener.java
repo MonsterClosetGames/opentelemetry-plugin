@@ -162,6 +162,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(run.getNumber()))
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
 
         // CULPRITS

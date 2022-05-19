@@ -154,6 +154,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(run.getNumber()))
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
             
             // PARAMETERS

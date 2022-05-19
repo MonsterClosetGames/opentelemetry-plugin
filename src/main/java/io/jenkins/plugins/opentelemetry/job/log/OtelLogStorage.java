@@ -83,6 +83,7 @@ class OtelLogStorage implements LogStorage {
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(buildInfo.runNumber))
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
@@ -104,6 +105,7 @@ class OtelLogStorage implements LogStorage {
         Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(buildInfo.runNumber))
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
@@ -132,6 +134,7 @@ class OtelLogStorage implements LogStorage {
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(buildInfo.runNumber))
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
