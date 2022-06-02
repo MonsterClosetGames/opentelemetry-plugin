@@ -65,6 +65,7 @@ public final class BuildInfo implements Serializable {
         return Attributes.builder()
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber)
+            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(runNumber))
             .build();
     }
 

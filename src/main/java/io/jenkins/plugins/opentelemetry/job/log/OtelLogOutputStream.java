@@ -82,6 +82,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
             if (flowNodeId != null) {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
             }
+            
             logEmitter.logBuilder()
                 .setBody(plainLogLine)
                 .setAttributes(attributesBuilder.build())
