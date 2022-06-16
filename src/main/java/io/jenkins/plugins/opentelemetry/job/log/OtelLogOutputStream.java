@@ -10,6 +10,8 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.common.Clock;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import io.opentelemetry.sdk.trace.ReadableSpan;
+
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
@@ -40,15 +42,17 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
     final LogEmitter logEmitter;
     final Context context;
     final Clock clock;
+    @Nullable String stageName;
 
     /**
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull LogEmitter logEmitter, @Nonnull Clock clock) {
+    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nullable String stageName, @Nonnull Map<String, String> w3cTraceContext, @Nonnull LogEmitter logEmitter, @Nonnull Clock clock) {
         this.buildInfo = buildInfo;
         this.flowNodeId = flowNodeId;
         this.logEmitter = logEmitter;
         this.clock = clock;
+        this.stageName = stageName;
         this.w3cTraceContext = w3cTraceContext;
         this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
             @Override
@@ -74,15 +78,22 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
         if (plainLogLine == null || plainLogLine.isEmpty()) {
             LOGGER.log(Level.FINEST, () -> buildInfo + " - skip empty log line");
         } else {
+            
             AttributesBuilder attributesBuilder = Attributes.builder();
+
             if (ENABLE_LOG_FORMATTING && textAndAnnotations.annotations != null) {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
             }
-            attributesBuilder.putAll(buildInfo.toAttributes());
             if (flowNodeId != null) {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
             }
+            if (stageName != null) {
+                attributesBuilder.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_STAGE_NAME, stageName);
+            }
             
+            attributesBuilder.putAll(buildInfo.toAttributes());
+            
+
             logEmitter.logBuilder()
                 .setBody(plainLogLine)
                 .setAttributes(attributesBuilder.build())

@@ -13,6 +13,9 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
@@ -63,7 +66,28 @@ class OtelLogStorage implements LogStorage {
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(),  otelConfigurationProperties, otelResourceAttributes);
+
+        FlowNode stageNode = FindCurrentStage(flowNode);
+        String stageName = "n/a";
+        if(stageNode != null) {
+            stageName = stageNode.getDisplayName();
+        }
+        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(), stageName,  otelConfigurationProperties, otelResourceAttributes);
+    }
+
+    private FlowNode FindCurrentStage(FlowNode flowNode) {
+        for(FlowNode parentNode: flowNode.getParents()) {
+            if(parentNode.getDisplayName().startsWith("Stage : Start")) {
+                return flowNode;
+            }
+            else {
+                FlowNode stageNode = FindCurrentStage(parentNode);
+                if(stageNode != null) {
+                    return stageNode;
+                }
+            }
+        }
+        return null;
     }
 
     /**

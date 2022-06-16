@@ -37,9 +37,12 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_CAUSE = AttributeKey.stringArrayKey("ci.pipeline.run.cause");
     public static final AttributeKey<Boolean> CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long> CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
+    public static final AttributeKey<Long> JENKINS_STEP_DURATION_MILLIS = AttributeKey.longKey("jenkins.pipeline.step.duration.ms");
     public static final AttributeKey<String> CI_PIPELINE_RUN_DESCRIPTION = AttributeKey.stringKey("ci.pipeline.run.description");
     public static final AttributeKey<Long> CI_PIPELINE_RUN_NUMBER = AttributeKey.longKey("ci.pipeline.run.number");
     public static final AttributeKey<String> CI_PIPELINE_BUILD_NUMBER = AttributeKey.stringKey("ci.pipeline.build.number");
+    public static final AttributeKey<String> CI_PIPELINE_STAGE_NAME = AttributeKey.stringKey("ci.pipeline.stage.name");
+    public static final AttributeKey<String> CI_PIPELINE_SPAN_NAME = AttributeKey.stringKey("ci.pipeline.span.name");
     public static final AttributeKey<List<Boolean>> CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE = AttributeKey.booleanArrayKey("ci.pipeline.parameter.sensitive");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_NAME = AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_VALUE = AttributeKey.stringArrayKey("ci.pipeline.parameter.value");

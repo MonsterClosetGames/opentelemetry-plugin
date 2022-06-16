@@ -38,6 +38,7 @@ import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
@@ -149,6 +150,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_STAGE_NAME, stageName)
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
@@ -331,6 +333,12 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             Span span = getTracerService().getSpan(run, node);
             ErrorAction errorAction = node.getError();
+            if(node instanceof StepEndNode) {
+                long startTime = TimingAction.getStartTime(((StepEndNode)node).getStartNode());
+                long endTime = TimingAction.getStartTime(node);
+                span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_DURATION_MILLIS, endTime - startTime);
+            }
+
             if (errorAction == null) {
                 span.setStatus(StatusCode.OK);
             } else {
