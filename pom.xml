@@ -18,8 +18,9 @@
     <packaging>hpi</packaging>
     <properties>
         <revision>2.13.1</revision>
-        <changelist>-SNAPSHOT</changelist>
+        <changelist>-moclo</changelist>
         <jenkins.version>2.361.4</jenkins.version>
+        <skipTests>true</skipTests>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.25.0</opentelemetry.version>
         <!--

@@ -103,7 +103,10 @@ public class OpenTelemetryServletFilter implements Filter {
                     spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
                 }
                 if (parsedJobUrl.runNumber != null) {
-                    spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber);
+                    spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber)
+                    /* MOCLO INTEGRATION START */
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Long.toString(parsedJobUrl.runNumber));
+                    /* MOCLO INTEGRATION END */;
                 }
             } else if (rootPath.equals("blue")) {
                 if (pathInfoTokens.size() == 1) {
@@ -123,7 +126,10 @@ public class OpenTelemetryServletFilter implements Filter {
                             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedBlueOceanPipelineUrl.jobName);
                         }
                         if (parsedBlueOceanPipelineUrl.runNumber != null) {
-                            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedBlueOceanPipelineUrl.runNumber);
+                            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedBlueOceanPipelineUrl.runNumber)
+                            /* MOCLO INTEGRATION START */
+                            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Long.toString(parsedBlueOceanPipelineUrl.runNumber));
+                            /* MOCLO INTEGRATION END */;
                         }
                     } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
                         // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/

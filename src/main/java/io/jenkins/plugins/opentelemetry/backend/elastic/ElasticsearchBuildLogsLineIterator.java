@@ -129,6 +129,9 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.close")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute("pointInTimeId", pointInTimeId);
         if (flowNodeId != null) {
             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
@@ -220,6 +223,9 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.skip")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute("pointInTimeId", pointInTimeId)
             .setAttribute("skipLines", skipLines);
         Span span = spanBuilder.startSpan();

@@ -29,6 +29,11 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/* MOCLO INTEGRATION START */
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+/* MOCLO INTEGRATION END */
+
 /**
  * Replaces the logs storage implementation with a custom one
  * that uses OpenTelemetry and Elasticsearch to store and retrieve the logs.
@@ -76,7 +81,16 @@ class OtelLogStorage implements LogStorage {
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(), otelConfigurationProperties, otelResourceAttributes);
+
+        /* MOCLO INTEGRATION START */
+        FlowNode stageNode = FindCurrentStage(flowNode);
+        String stageName = "n/a";
+        if(stageNode != null) {
+            stageName = stageNode.getDisplayName();
+        }
+        /* MOCLO INTEGRATION END */
+
+        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(), stageName, otelConfigurationProperties, otelResourceAttributes);
 
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
@@ -88,6 +102,24 @@ class OtelLogStorage implements LogStorage {
         }
         return otelLogSenderBuildListenerOnController;
     }
+
+    
+    /* MOCLO INTEGRATION START */
+    private FlowNode FindCurrentStage(FlowNode flowNode) {
+        for(FlowNode parentNode: flowNode.getParents()) {
+            if(parentNode.getDisplayName().startsWith("Stage : Start")) {
+                return flowNode;
+            }
+            else {
+                FlowNode stageNode = FindCurrentStage(parentNode);
+                if(stageNode != null) {
+                    return stageNode;
+                }
+            }
+        }
+        return null;
+    }
+    /* MOCLO INTEGRATION END */
 
     /**
      * Invoked by
@@ -111,6 +143,9 @@ class OtelLogStorage implements LogStorage {
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(buildInfo.runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
@@ -137,6 +172,9 @@ class OtelLogStorage implements LogStorage {
         Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(buildInfo.runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
@@ -165,6 +203,9 @@ class OtelLogStorage implements LogStorage {
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(buildInfo.runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {

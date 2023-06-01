@@ -138,6 +138,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute("complete", complete);
 
         Span span = spanBuilder.startSpan();
@@ -174,6 +177,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            /* MOCLO INTEGRATION START */
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(runNumber))
+            /* MOCLO INTEGRATION END */
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId)
             .setAttribute("complete", complete);
 

@@ -39,6 +39,12 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     final BuildInfo buildInfo;
     @Nullable
     final String flowNodeId;
+
+    /* MOCLO INTEGRATION START */
+    @Nullable
+    final String stageName;
+    /* MOCLO INTEGRATION END */
+
     final Map<String, String> w3cTraceContext;
     final Map<String, String> otelConfigProperties;
     final Map<String, String> otelResourceAttributes;
@@ -52,13 +58,18 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     transient PrintStream logger;
 
     public OtelLogSenderBuildListener(@NonNull BuildInfo buildInfo, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
-        this(buildInfo, null, otelConfigProperties, otelResourceAttributes);
+        this(buildInfo, null, null, otelConfigProperties, otelResourceAttributes);
     }
 
-    public OtelLogSenderBuildListener(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
+    public OtelLogSenderBuildListener(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId,/* MOCLO INTEGRATION START */ @Nullable String stageName, /* MOCLO INTEGRATION END */ @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
         this.buildInfo = new BuildInfo(buildInfo);
         this.w3cTraceContext = buildInfo.getW3cTraceContext();
         this.flowNodeId = flowNodeId;
+
+        /* MOCLO INTEGRATION START */
+        this.stageName = stageName;
+        /* MOCLO INTEGRATION END */
+
         this.otelConfigProperties = otelConfigProperties;
         this.otelResourceAttributes = otelResourceAttributes;
         this.clock = Clock.getDefault();
@@ -72,7 +83,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
             try {
-                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getOtelLogger(), clock), false, "UTF-8");
+                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId,/* MOCLO INTEGRATION START */ stageName, /* MOCLO INTEGRATION END */ w3cTraceContext, getOtelLogger(), clock), false, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 throw new AssertionError(e);
             }
@@ -92,11 +103,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
 
         public OtelLogSenderBuildListenerOnController(@NonNull BuildInfo buildInfo, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
-            this(buildInfo, null, otelConfigProperties, otelResourceAttributes);
+            this(buildInfo, null, null, otelConfigProperties, otelResourceAttributes);
         }
 
-        public OtelLogSenderBuildListenerOnController(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
-            super(buildInfo, flowNodeId, otelConfigProperties, otelResourceAttributes);
+        public OtelLogSenderBuildListenerOnController(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId,/* MOCLO INTEGRATION START */ @Nullable String stageName /* MOCLO INTEGRATION END */, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
+            super(buildInfo, flowNodeId, stageName, otelConfigProperties, otelResourceAttributes);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnController()");
             JenkinsJVM.checkJenkinsJVM();
         }
@@ -117,7 +128,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         private Object writeReplace() throws IOException {
             logger.log(Level.FINEST, () -> "writeReplace()");
             JenkinsJVM.checkJenkinsJVM();
-            return new OtelLogSenderBuildListenerOnAgent(buildInfo, flowNodeId, otelConfigProperties, otelResourceAttributes);
+            return new OtelLogSenderBuildListenerOnAgent(buildInfo, flowNodeId, stageName, otelConfigProperties, otelResourceAttributes);
         }
     }
 
@@ -140,8 +151,8 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         /**
          * Intended to be exclusively called on the Jenkins Controller by {@link OtelLogSenderBuildListenerOnController#writeReplace()}.
          */
-        private OtelLogSenderBuildListenerOnAgent(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
-            super(buildInfo, flowNodeId, otelConfigProperties, otelResourceAttributes);
+        private OtelLogSenderBuildListenerOnAgent(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId,/* MOCLO INTEGRATION START */ @Nullable String stageName, /* MOCLO INTEGRATION END */ @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
+            super(buildInfo, flowNodeId, stageName, otelConfigProperties, otelResourceAttributes);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnAgent()");
             JenkinsJVM.checkJenkinsJVM();
         }

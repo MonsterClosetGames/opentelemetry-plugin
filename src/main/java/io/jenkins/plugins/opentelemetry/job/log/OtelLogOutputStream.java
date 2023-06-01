@@ -19,6 +19,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/* MOCLO INTEGRATION START */
+import io.opentelemetry.sdk.trace.ReadableSpan;
+/* MOCLO INTEGRATION END */
+
 /**
  * Process the output stream and send it to OpenTelemetry.
  * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context.
@@ -40,15 +44,24 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
     final Context context;
     final Clock clock;
 
+    /* MOCLO INTEGRATION START */
+    @Nullable String stageName;
+    /* MOCLO INTEGRATION END */
+
     /**
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> w3cTraceContext, @NonNull io.opentelemetry.api.logs.Logger otelLogger, @NonNull Clock clock) {
+    public OtelLogOutputStream(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, /* MOCLO INTEGRATION START */ @Nullable String stageName, /* MOCLO INTEGRATION END */ @NonNull Map<String, String> w3cTraceContext, @NonNull io.opentelemetry.api.logs.Logger otelLogger, @NonNull Clock clock) {
         this.buildInfo = buildInfo;
         this.flowNodeId = flowNodeId;
         this.otelLogger = otelLogger;
         this.clock = clock;
         this.w3cTraceContext = w3cTraceContext;
+
+        /* MOCLO INTEGRATION START */
+        this.stageName = stageName;
+        /* MOCLO INTEGRATION END */
+
         this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
             @Override
             public Iterable<String> keys(Map<String, String> carrier) {
@@ -81,6 +94,13 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
             if (flowNodeId != null) {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
             }
+
+            /* MOCLO INTEGRATION START */
+            if (stageName != null) {
+                attributesBuilder.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_STAGE_NAME, stageName);
+            }
+            /* MOCLO INTEGRATION END */
+
             otelLogger.logRecordBuilder()
                 .setBody(plainLogLine)
                 .setAllAttributes(attributesBuilder.build())

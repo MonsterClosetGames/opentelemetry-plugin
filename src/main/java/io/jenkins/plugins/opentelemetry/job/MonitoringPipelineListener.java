@@ -59,6 +59,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/* MOCLO INTEGRATION START */
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
+/* MOCLO INTEGRATION END */
+
 import static com.google.common.base.Verify.verifyNotNull;
 
 
@@ -141,14 +147,49 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"stage");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
-            Span stageSpan = getTracer().spanBuilder(spanStageName)
+            SpanBuilder spanBuilder = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
-                    .startSpan();
+
+            /* MOCLO INTEGRATION START */
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_BUILD_NUMBER, Integer.toString(run.getNumber()))
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+
+
+             // PARAMETERS
+             ParametersAction parameters = run.getAction(ParametersAction.class);
+             if (parameters != null) {
+                 List<String> parameterNames = new ArrayList<>();
+                 List<Boolean> parameterIsSensitive = new ArrayList<>();
+                 // Span Attribute Values can NOT be null
+                 // https://github.com/open-telemetry/opentelemetry-specification/blob/v1.3.0/specification/common/common.md
+                 List<String> nonNullParameterValues = new ArrayList<>();
+ 
+                 for (ParameterValue parameter : parameters.getParameters()) {
+                     parameterNames.add(Objects.toString(parameter.getName(), "#NULL#"));
+                     parameterIsSensitive.add(parameter.isSensitive());
+                     if (parameter.isSensitive()) {
+                         nonNullParameterValues.add("#REDACTED#");
+                     } else {
+                         nonNullParameterValues.add(Objects.toString(parameter.getValue(), "#NULL#"));
+                     }
+                 }
+                 spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_NAME, parameterNames);
+                 spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE, parameterIsSensitive);
+                 spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
+             }
+
+                    
+
+            Span stageSpan = spanBuilder.startSpan();
+            /* MOCLO INTEGRATION END */
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
@@ -299,6 +340,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             Span span = getTracerService().getSpan(run, node);
             ErrorAction errorAction = node.getError();
+
+            /* MOCLO INTEGRATION START */
+            if(node instanceof StepEndNode) {
+                long startTime = TimingAction.getStartTime(((StepEndNode)node).getStartNode());
+                long endTime = TimingAction.getStartTime(node);
+                span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_DURATION_MILLIS, endTime - startTime);
+            }
+            /* MOCLO INTEGRATION END */
+
             if (errorAction == null) {
                 span.setStatus(StatusCode.OK);
             } else {
